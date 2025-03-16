@@ -1,0 +1,12 @@
+{
+    "name": "evergreen/truszed",
+    "description": "truszed properties email verification",
+    "autoload": {
+        "psr-4": {
+            "Evergreen\\Truszed\\": "src/"
+        }
+    },
+    "require": {
+        "phpmailer/phpmailer": "^6.9"
+    }
+}
