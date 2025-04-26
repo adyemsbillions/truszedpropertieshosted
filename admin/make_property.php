@@ -20,13 +20,16 @@ if ($conn->connect_error) {
 $error_message = '';
 $success_message = '';
 
-// // Retrieve the admin_id from the session
-// $admin_id = isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : null; // Assuming the admin ID is stored in the session
+// Retrieve the admin_id from the session
+$admin_id = isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : null;
 
-// // Ensure admin_id is valid
-// if ($admin_id === null) {
-//     $error_message = "You must be logged in as an admin to submit the form.";
-// }
+// Ensure admin_id is valid
+if ($admin_id === null) {
+    $error_message = "You must be logged in to submit the form.";
+}
+
+// Check if the user is an admin with ID 1, 2, or 3
+$is_special_admin = in_array($admin_id, [1, 2, 3]);
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
@@ -43,15 +46,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
     $market_status = mysqli_real_escape_string($conn, $_POST['market_status']);
     $state = mysqli_real_escape_string($conn, $_POST['state']);
     $lga = isset($_POST['lga']) ? mysqli_real_escape_string($conn, $_POST['lga']) : null;
-
     $property_details = mysqli_real_escape_string($conn, $_POST['property_details']);
-    
-    // Add agent_id from the form
-    $agent_id = isset($_POST['agent_id']) ? mysqli_real_escape_string($conn, $_POST['agent_id']) : null;
+
+    // Determine agent_id and approval status
+    if ($is_special_admin) {
+        // For admins with IDs 1, 2, or 3, use their admin_id as agent_id and auto-approve
+        $agent_id = $admin_id;
+        $approved = 1; // Auto-approved
+    } else {
+        // For other users (agents), use the agent_id from the form and set to pending approval
+        $agent_id = isset($_POST['agent_id']) ? mysqli_real_escape_string($conn, $_POST['agent_id']) : null;
+        $approved = 0; // Pending approval
+    }
+
+    // Validate agent_id
+    if (empty($agent_id)) {
+        $error_message = "Agent ID is required.";
+    }
 
     // File upload for post_image
     $post_image = $_FILES['post_image']['name'];
-    $target_dir = "uploads/";
+    $target_dir = "../agent/agent_dashboard/uploads/";
     $target_file = $target_dir . basename($post_image);
 
     // Check if the post_image is uploaded
@@ -99,10 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
 
     // If no errors, proceed to insert data into the database
     if (empty($error_message)) {
-        // Insert the form data into the database, including the admin_id and agent_id
+        // Insert the form data into the database, including agent_id and approved status
         $sql = "INSERT INTO agent_properties 
-            (property_name, price, address, dimensions, property_type, bedrooms, bathrooms, toilets, parking_space, post_image, other_images, market_status, state, lga, property_details,  agent_id)
-            VALUES ('$property_name', '$price', '$address', '$dimensions', '$property_type', '$bedrooms', '$bathrooms', '$toilets', '$parking_space', '$post_image', '$other_images_str', '$market_status', '$state', '$lga', '$property_details', '$agent_id')";
+            (property_name, price, address, dimensions, property_type, bedrooms, bathrooms, toilets, parking_space, post_image, other_images, market_status, state, lga, property_details, agent_id, status)
+            VALUES ('$property_name', '$price', '$address', '$dimensions', '$property_type', '$bedrooms', '$bathrooms', '$toilets', '$parking_space', '$post_image', '$other_images_str', '$market_status', '$state', '$lga', '$property_details', '$agent_id', '$approved')";
 
         if ($conn->query($sql) === TRUE) {
             $success_message = "Property added successfully!";
@@ -113,121 +128,132 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error_message) {
 }
 
 $conn->close();
-?> 
-
+?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Property Form</title>
-   <style>
+    <style>
     body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    width: 9    0%;
-    max-width: 800px; /* Maximum width for larger screens */
-    margin: 0 auto;
-    padding: 20px;
-    background-color: white;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-h2 {
-    text-align: center;
-    margin-bottom: 20px; /* Add some space below the heading */
-}
-
-label {
-    display: block;
-    margin-top: 10px;
-    font-weight: bold;
-}
-
-input[type="text"], input[type="number"], input[type="file"], textarea, select {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-button {
-    background-color: purple;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    width: 100%;
-    margin-top: 20px;
-}
-
-button:hover {
-    background-color: #6a1b9a; /* Darker shade of purple */
-}
-
-.error {
-    color: red;
-    font-size: 14px;
-}
-
-.success {
-    color: green;
-    font-size: 14px;
-}
-
-/* Media Queries for Responsiveness */
-@media (max-width: 550px) {
-    .container {
-        width: 90%; /* Adjust width for mobile screens */
-        padding: 15px;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
     }
 
-    input[type="text"], input[type="number"], input[type="file"], textarea, select {
-        font-size: 16px; /* Increase font size for mobile */
+    .container {
+        width: 9 0%;
+        max-width: 800px;
+        /* Maximum width for larger screens */
+        margin: 0 auto;
+        padding: 20px;
+        background-color: white;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        /* Add some space below the heading */
+    }
+
+    label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    textarea,
+    select {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+        box-sizing: border-box;
     }
 
     button {
-        font-size: 18px; /* Increase button font size on mobile */
+        background-color: purple;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+        margin-top: 20px;
     }
-}
 
-   </style>
+    button:hover {
+        background-color: #6a1b9a;
+        /* Darker shade of purple */
+    }
+
+    .error {
+        color: red;
+        font-size: 14px;
+    }
+
+    .success {
+        color: green;
+        font-size: 14px;
+    }
+
+    /* Media Queries for Responsiveness */
+    @media (max-width: 550px) {
+        .container {
+            width: 90%;
+            /* Adjust width for mobile screens */
+            padding: 15px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        textarea,
+        select {
+            font-size: 16px;
+            /* Increase font size for mobile */
+        }
+
+        button {
+            font-size: 18px;
+            /* Increase button font size on mobile */
+        }
+    }
+    </style>
 </head>
-<body>
 
+<body>
     <div class="container">
         <h2>Agent Property Form</h2>
-        
+
         <!-- Display success or error message -->
         <?php if ($error_message) { ?>
-            <div class="error"><?php echo $error_message; ?></div>
+        <div class="error"><?php echo $error_message; ?></div>
         <?php } elseif ($success_message) { ?>
-            <div class="success"><?php echo $success_message; ?></div>
+        <div class="success"><?php echo $success_message; ?></div>
         <?php } ?>
 
         <!-- Form -->
         <form action="make_property.php" method="POST" enctype="multipart/form-data">
-          <!-- Agent ID input field -->
-             <label for="agent_id">Agent ID:</label>
-            <input type="text" id="agent_id" name="agent_id" required>   
-        
-        <!-- Property Name -->
-<!-- 
+            <!-- Agent ID input field (shown only for non-special admins) -->
+            <?php if (!$is_special_admin) { ?>
             <label for="agent_id">Agent ID:</label>
-            <input type="text" name="agent_id" id="agent_id" required> -->
+            <input type="text" id="agent_id" name="agent_id" required>
+            <?php } ?>
 
+            <!-- Property Name -->
             <label for="property_name">Property Name:</label>
             <input type="text" id="property_name" name="property_name" required>
 
@@ -310,149 +336,199 @@ button:hover {
             "Isuikwuato", "Ugwunagbo", "Ohafia", "Umuahia North", "Umuahia South", "Ukwa East", "Ukwa West"
         ],
         "Adamawa": [
-            "Demsa", "Fufore", "Ganye", "Girei", "Gombi", "Jada", "Larmurde", "Mayo-Belwa", "Michika", "Mubi North",
+            "Demsa", "Fufore", "Ganye", "Girei", "Gombi", "Jada", "Larmurde", "Mayo-Belwa", "Michika",
+            "Mubi North",
             "Mubi South", "Numan", "Shelleng", "Song", "Toungo", "Yola North", "Yola South"
         ],
         "Akwa Ibom": [
-            "Abak", "Eastern Obolo", "Eket", "Esit Eket", "Essien Udim", "Etim Ekpo", "Ibeno", "Ibesikpo Asutan",
+            "Abak", "Eastern Obolo", "Eket", "Esit Eket", "Essien Udim", "Etim Ekpo", "Ibeno",
+            "Ibesikpo Asutan",
             "Ikono", "Ikot Abasi", "Ini", "Itu", "Mbo", "Mkpat Enin", "Nsit Atai", "Nsit Ibom", "Nsit Ubuim",
             "Obot Akara", "Okobo", "Oron", "Oruk Anam", "Udung Uko", "Uruan", "Uyo"
         ],
         "Anambra": [
-            "Aguata", "Anambra East", "Anambra West", "Anaocha", "Awka North", "Awka South", "Ayamelum", "Dunukofia",
-            "Ekwusigo", "Idemili North", "Idemili South", "Ihiala", "Njikoka", "Nnewi North", "Nnewi South", "Ogbaru",
+            "Aguata", "Anambra East", "Anambra West", "Anaocha", "Awka North", "Awka South", "Ayamelum",
+            "Dunukofia",
+            "Ekwusigo", "Idemili North", "Idemili South", "Ihiala", "Njikoka", "Nnewi North", "Nnewi South",
+            "Ogbaru",
             "Onitsha North", "Onitsha South", "Oyi"
         ],
         "Bauchi": [
-            "Alkaleri", "Bauchi", "Bogoro", "Damban", "Darazo", "Dass", "Gamawa", "Ganjuwa", "Giade", "Itas Gadau",
+            "Alkaleri", "Bauchi", "Bogoro", "Damban", "Darazo", "Dass", "Gamawa", "Ganjuwa", "Giade",
+            "Itas Gadau",
             "Jama'are", "Katagum", "Kirfi", "Misau", "Ningi", "Shira", "Tafawa Balewa", "Toro", "Zaki"
         ],
         "Bayelsa": [
             "Brass", "Ekeremor", "Kolokuma/Opokuma", "Nembe", "Ogbia", "Sagbama", "Southern Ijaw", "Yenagoa"
         ],
         "Benue": [
-            "Ado", "Agatu", "Apa", "Buruku", "Guma", "Gwer-East", "Gwer-West", "Katsina-Ala", "Konshisha", "Kwande",
-            "Logo", "Makurdi", "Mbala", "Obi", "Ogbadibo", "Ohimini", "Okpokwu", "Oturkpo", "Tarka", "Ukum", "Vandeikya"
+            "Ado", "Agatu", "Apa", "Buruku", "Guma", "Gwer-East", "Gwer-West", "Katsina-Ala", "Konshisha",
+            "Kwande",
+            "Logo", "Makurdi", "Mbala", "Obi", "Ogbadibo", "Ohimini", "Okpokwu", "Oturkpo", "Tarka", "Ukum",
+            "Vandeikya"
         ],
         "Borno": [
-            "Abadam", "Askira/Uba", "Bama", "Bayo", "Damboa", "Dikwa", "Gubio", "Guzamala", "Jere", "Kaga", "Kala/Balge",
-            "Konduga", "Mafa", "Magumeri", "Maiduguri", "Marte", "Mobbar", "Monguno", "Ngala", "Nganzai", "Shani"
+            "Abadam", "Askira/Uba", "Bama", "Bayo", "Damboa", "Dikwa", "Gubio", "Guzamala", "Jere", "Kaga",
+            "Kala/Balge",
+            "Konduga", "Mafa", "Magumeri", "Maiduguri", "Marte", "Mobbar", "Monguno", "Ngala", "Nganzai",
+            "Shani"
         ],
         "Cross River": [
-            "Akpabuyo", "Bakassi", "Calabar Municipal", "Calabar South", "Etung", "Ikom", "Obanliku", "Obubra", "Odukpani",
+            "Akpabuyo", "Bakassi", "Calabar Municipal", "Calabar South", "Etung", "Ikom", "Obanliku", "Obubra",
+            "Odukpani",
             "Ogoja", "Yakurr", "Yala"
         ],
         "Delta": [
-            "Aniocha North", "Aniocha South", "Bomadi", "Burutu", "Ika North East", "Ika South", "Isoko North", "Isoko South",
-            "Ndokwa East", "Ndokwa West", "Okpe", "Oshimili North", "Oshimili South", "Patani", "Sapele", "Udu", "Ughelli North",
+            "Aniocha North", "Aniocha South", "Bomadi", "Burutu", "Ika North East", "Ika South", "Isoko North",
+            "Isoko South",
+            "Ndokwa East", "Ndokwa West", "Okpe", "Oshimili North", "Oshimili South", "Patani", "Sapele", "Udu",
+            "Ughelli North",
             "Ughelli South", "Ukwuani", "Warri North", "Warri South", "Warri South West"
         ],
         "Ebonyi": [
-            "Abakaliki", "Afikpo North", "Afikpo South", "Ebonyi", "Ezza North", "Ezza South", "Ikwo", "Ishielu", "Ivo",
+            "Abakaliki", "Afikpo North", "Afikpo South", "Ebonyi", "Ezza North", "Ezza South", "Ikwo",
+            "Ishielu", "Ivo",
             "Izzi", "Ohaozara", "Ohaukwu", "Onicha"
         ],
         "Edo": [
-            "Akoko-Edo", "Esan Central", "Esan North-East", "Esan South-East", "Esan West", "Egor", "Ikpoba-Okha", "Orhionmwon",
+            "Akoko-Edo", "Esan Central", "Esan North-East", "Esan South-East", "Esan West", "Egor",
+            "Ikpoba-Okha", "Orhionmwon",
             "Oredo", "Ovia North-East", "Ovia South-West", "Uhunmwonde"
         ],
         "Ekiti": [
-            "Ado-Ekiti", "Efon", "Ekiti East", "Ekiti South-West", "Ekiti West", "Ido Osi", "Ijero", "Ikere", "Ilejemeje",
+            "Ado-Ekiti", "Efon", "Ekiti East", "Ekiti South-West", "Ekiti West", "Ido Osi", "Ijero", "Ikere",
+            "Ilejemeje",
             "Irepodun/Ifelodun", "Ise/Orun", "Moba", "Oye"
         ],
         "Enugu": [
-            "Aninri", "Enugu East", "Enugu North", "Enugu South", "Ezeagu", "Igbo Etiti", "Igbo-Eze North", "Igbo-Eze South",
+            "Aninri", "Enugu East", "Enugu North", "Enugu South", "Ezeagu", "Igbo Etiti", "Igbo-Eze North",
+            "Igbo-Eze South",
             "Isi-Uzo", "Nkanu East", "Nkanu West", "Oji River", "Udenu", "Udi", "Uzo-Uwani"
         ],
         "Gombe": [
-            "Akko", "Balanga", "Billiri", "Dukku", "Funakaye", "Gombe", "Kaltungo", "Kwami", "Nafada", "Shongom", "Yamaltu/Deba"
+            "Akko", "Balanga", "Billiri", "Dukku", "Funakaye", "Gombe", "Kaltungo", "Kwami", "Nafada",
+            "Shongom", "Yamaltu/Deba"
         ],
         "Imo": [
-            "Aboh-Mbaise", "Ahiazu Mbaise", "Ehime Mbano", "Ezinihitte", "Ideato North", "Ideato South", "Ihitte/Uboma",
-            "Ikeduru", "Isiala Mbano", "Isu", "Mbaitoli", "Ngor-Okpala", "Njaba", "Njirimogha", "Nkwerre", "Obowo", "Oguta",
-            "Ohaji/Egbema", "Orlu", "Orsu", "Oru East", "Oru West", "Owerri Municipal", "Owerri North", "Owerri West"
+            "Aboh-Mbaise", "Ahiazu Mbaise", "Ehime Mbano", "Ezinihitte", "Ideato North", "Ideato South",
+            "Ihitte/Uboma",
+            "Ikeduru", "Isiala Mbano", "Isu", "Mbaitoli", "Ngor-Okpala", "Njaba", "Njirimogha", "Nkwerre",
+            "Obowo", "Oguta",
+            "Ohaji/Egbema", "Orlu", "Orsu", "Oru East", "Oru West", "Owerri Municipal", "Owerri North",
+            "Owerri West"
         ],
         "Jigawa": [
-            "Auyo", "Babura", "Birnin Kudu", "Buji", "Dutse", "Garki", "Gumel", "Guri", "Gwadabawa", "Hadejia", "Kafin Hausa",
-            "Kaugama", "Kazaure", "Kiri Kasama", "Maigatari", "Miga", "Ringim", "Roni", "Sule Tankarkar", "Taura", "Yankwashi"
+            "Auyo", "Babura", "Birnin Kudu", "Buji", "Dutse", "Garki", "Gumel", "Guri", "Gwadabawa", "Hadejia",
+            "Kafin Hausa",
+            "Kaugama", "Kazaure", "Kiri Kasama", "Maigatari", "Miga", "Ringim", "Roni", "Sule Tankarkar",
+            "Taura", "Yankwashi"
         ],
         "Kaduna": [
-            "Birnin Gwari", "Chikun", "Giwa", "Igabi", "Jaba", "Jama'a", "Kachia", "Kaduna North", "Kaduna South", "Kagarko",
-            "Kajuru", "Kano", "Kauru", "Kaura", "Kubau", "Kudan", "Lere", "Makarfi", "Sabon Gari", "Sanga", "Soba", "Zangon Kataf"
+            "Birnin Gwari", "Chikun", "Giwa", "Igabi", "Jaba", "Jama'a", "Kachia", "Kaduna North",
+            "Kaduna South", "Kagarko",
+            "Kajuru", "Kano", "Kauru", "Kaura", "Kubau", "Kudan", "Lere", "Makarfi", "Sabon Gari", "Sanga",
+            "Soba", "Zangon Kataf"
         ],
         "Kano": [
-            "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure", "Dala", "Dambatta", "Doguwa", "Fagge", "Gaya", "Garko", "Gwale",
-            "Kabo", "Kano Municipal", "Karaye", "Kibiya", "Kiru", "Kumbotso", "Kunchi", "Madobi", "Makoda", "Minjibir", "Nasarawa",
-            "Rano", "Rimin Gado", "Shanono", "Sumaila", "Takai", "Tarauni", "Tofa", "Tsanyawa", "Tudun Wada", "Ungogo"
+            "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure", "Dala", "Dambatta", "Doguwa", "Fagge", "Gaya",
+            "Garko", "Gwale",
+            "Kabo", "Kano Municipal", "Karaye", "Kibiya", "Kiru", "Kumbotso", "Kunchi", "Madobi", "Makoda",
+            "Minjibir", "Nasarawa",
+            "Rano", "Rimin Gado", "Shanono", "Sumaila", "Takai", "Tarauni", "Tofa", "Tsanyawa", "Tudun Wada",
+            "Ungogo"
         ],
         "Katsina": [
-            "Bakori", "Batagarawa", "Batsari", "Bwari", "Dandume", "Danja", "Daura", "Dutsin-Ma", "Funtua", "Ingawa", "Jibia",
-            "Kaita", "Kankara", "Katsina", "Katsina North", "Kurfi", "Kusada", "Maiadua", "Malumfashi", "Mani", "Mashi",
+            "Bakori", "Batagarawa", "Batsari", "Bwari", "Dandume", "Danja", "Daura", "Dutsin-Ma", "Funtua",
+            "Ingawa", "Jibia",
+            "Kaita", "Kankara", "Katsina", "Katsina North", "Kurfi", "Kusada", "Maiadua", "Malumfashi", "Mani",
+            "Mashi",
             "Munhaina", "Rimi", "Sabuwa", "Safana", "Zango"
         ],
         "Kebbi": [
-            "Aleiro", "Arewa", "Augie", "Bagudo", "Birnin Kebbi", "Dandi", "Danko-Wasagu", "Gwandu", "Jega", "Kalgo",
+            "Aleiro", "Arewa", "Augie", "Bagudo", "Birnin Kebbi", "Dandi", "Danko-Wasagu", "Gwandu", "Jega",
+            "Kalgo",
             "Koko-Besse", "Maiyama", "Ngaski", "Sakaba", "Shanga", "Suru", "Wasagu", "Zuru"
         ],
         "Kogi": [
-            "Adavi", "Ajaokuta", "Ankpa", "Bassa", "Dekina", "Ibaji", "Idah", "Igalamela-Odolu", "Ijumu", "Kabba/Bunu",
-            "Kogi", "Lokoja", "Mopa-Muro", "Ofu", "Okehi", "Okene", "Olamaboro", "Omala", "Yagba East", "Yagba West"
+            "Adavi", "Ajaokuta", "Ankpa", "Bassa", "Dekina", "Ibaji", "Idah", "Igalamela-Odolu", "Ijumu",
+            "Kabba/Bunu",
+            "Kogi", "Lokoja", "Mopa-Muro", "Ofu", "Okehi", "Okene", "Olamaboro", "Omala", "Yagba East",
+            "Yagba West"
         ],
         "Kwara": [
-            "Asa", "Baruten", "Edu", "Ekiti", "Ifelodun", "Ilorin East", "Ilorin South", "Ilorin West", "Irepodun", "Isin",
+            "Asa", "Baruten", "Edu", "Ekiti", "Ifelodun", "Ilorin East", "Ilorin South", "Ilorin West",
+            "Irepodun", "Isin",
             "Kaiama", "Moro", "Offa", "Oke-Ero", "Oyun", "Pategi"
         ],
         "Lagos": [
-            "Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry", "Bangbo", "Ibeju-Lekki", "Ifako-Ijaiye",
-            "Ikeja", "Ikorodu", "Kosofe", "Lagos Island", "Lagos Mainland", "Mushin", "Ojo", "Oshodi-Isolo", "Shomolu", "Surulere"
+            "Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry", "Bangbo",
+            "Ibeju-Lekki", "Ifako-Ijaiye",
+            "Ikeja", "Ikorodu", "Kosofe", "Lagos Island", "Lagos Mainland", "Mushin", "Ojo", "Oshodi-Isolo",
+            "Shomolu", "Surulere"
         ],
         "Nasarawa": [
-            "Akwanga", "Alushi", "Doma", "Keffi", "Kokona", "Lafia", "Nasarawa", "Nasarawa Eggon", "Obi", "Toto", "Wamba"
+            "Akwanga", "Alushi", "Doma", "Keffi", "Kokona", "Lafia", "Nasarawa", "Nasarawa Eggon", "Obi",
+            "Toto", "Wamba"
         ],
         "Niger": [
-            "Agaie", "Agwara", "Bida", "Borgu", "Bosso", "Chanchaga", "Edati", "Gbako", "Gurara", "Katcha", "Kontagora",
+            "Agaie", "Agwara", "Bida", "Borgu", "Bosso", "Chanchaga", "Edati", "Gbako", "Gurara", "Katcha",
+            "Kontagora",
             "Mokwa", "Mashegu", "Muya", "Paikoro", "Rafi", "Shiroro", "Suleja", "Tafa", "Wushishi"
         ],
         "Ogun": [
-            "Abeokuta North", "Abeokuta South", "Ado-Odo/Ota", "Ewekoro", "Ifo", "Ijebu East", "Ijebu North", "Ijebu North-East",
-            "Ijebu Ode", "Ikenne", "Imeko-Afon", "Ipokia", "Obafemi-Owode", "Odeda", "Odogbolu", "Ogun Waterside", "Remo North",
+            "Abeokuta North", "Abeokuta South", "Ado-Odo/Ota", "Ewekoro", "Ifo", "Ijebu East", "Ijebu North",
+            "Ijebu North-East",
+            "Ijebu Ode", "Ikenne", "Imeko-Afon", "Ipokia", "Obafemi-Owode", "Odeda", "Odogbolu",
+            "Ogun Waterside", "Remo North",
             "Shagamu"
         ],
         "Ondo": [
-            "Akure North", "Akure South", "Ese Odo", "Idanre", "Ifedore", "Ilaje", "Ile-Oluji/Okeigbo", "Irele", "Odigbo",
+            "Akure North", "Akure South", "Ese Odo", "Idanre", "Ifedore", "Ilaje", "Ile-Oluji/Okeigbo", "Irele",
+            "Odigbo",
             "Okitipupa", "Ondo East", "Ondo West", "Ose", "Owo"
         ],
         "Osun": [
-            "Aiyedire", "Atakunmosa East", "Atakunmosa West", "Boluwaduro", "Boripe", "Ede North", "Ede South", "Egbedore",
-            "Ife Central", "Ife East", "Ife North", "Ife South", "Ilesa East", "Ilesa West", "Irepodun", "Iwo", "Obokun",
+            "Aiyedire", "Atakunmosa East", "Atakunmosa West", "Boluwaduro", "Boripe", "Ede North", "Ede South",
+            "Egbedore",
+            "Ife Central", "Ife East", "Ife North", "Ife South", "Ilesa East", "Ilesa West", "Irepodun", "Iwo",
+            "Obokun",
             "Ola Oluwa", "Olorunda", "Osogbo"
         ],
         "Oyo": [
-            "Akinyele", "Atiba", "Atigun", "Egbeda", "Ibadan North", "Ibadan North-East", "Ibadan North-West", "Ibadan South-East",
-            "Ibadan South-West", "Ibarapa Central", "Ibarapa East", "Ibarapa North", "Ido", "Irepo", "Iskire", "Ogbomosho North",
+            "Akinyele", "Atiba", "Atigun", "Egbeda", "Ibadan North", "Ibadan North-East", "Ibadan North-West",
+            "Ibadan South-East",
+            "Ibadan South-West", "Ibarapa Central", "Ibarapa East", "Ibarapa North", "Ido", "Irepo", "Iskire",
+            "Ogbomosho North",
             "Ogbomosho South", "Olorunsogo", "Oluyole", "Ona-Ara", "Saki East", "Saki West"
         ],
         "Plateau": [
-            "Barkin Ladi", "Bassa", "Bokkos", "Jos East", "Jos North", "Jos South", "Kanam", "Kanke", "Langtang North",
+            "Barkin Ladi", "Bassa", "Bokkos", "Jos East", "Jos North", "Jos South", "Kanam", "Kanke",
+            "Langtang North",
             "Langtang South", "Mangu", "Mikang", "Pankshin", "Qua'an Pan", "Riyom", "Shendam", "Wase"
         ],
         "Rivers": [
-            "Ahoada East", "Ahoada West", "Akuku-Toru", "Andoni", "Bonny", "Emohua", "Gokana", "Ikwerre", "Khana", "Obio-Akpor",
+            "Ahoada East", "Ahoada West", "Akuku-Toru", "Andoni", "Bonny", "Emohua", "Gokana", "Ikwerre",
+            "Khana", "Obio-Akpor",
             "Ogba/Egbema/Ndoni", "Ogu/Bolo", "Okrika", "Omumma", "Opobo/Nkoro", "Port Harcourt", "Tai"
         ],
         "Sokoto": [
-            "Binji", "Bodinga", "Dange/Shuni", "Gada", "Goronyo", "Gudu", "Illela", "Kebbe", "Kware", "Rabah", "Shagari", "Sokoto North",
+            "Binji", "Bodinga", "Dange/Shuni", "Gada", "Goronyo", "Gudu", "Illela", "Kebbe", "Kware", "Rabah",
+            "Shagari", "Sokoto North",
             "Sokoto South", "Tambuwal", "Tangaza", "Tureta", "Wamakko", "Wurno", "Yabo"
         ],
         "Taraba": [
-            "Ardo-Kola", "Bali", "Donga", "Gashaka", "Gumti", "Jalingo", "Karim Lamido", "Kumi", "Lau", "Sunkani", "Takum",
+            "Ardo-Kola", "Bali", "Donga", "Gashaka", "Gumti", "Jalingo", "Karim Lamido", "Kumi", "Lau",
+            "Sunkani", "Takum",
             "Ussa", "Wukari", "Yorro"
         ],
         "Yobe": [
-            "Bade", "Bursari", "Damaturu", "Fune", "Geidam", "Gujba", "Gulani", "Jakusko", "Karasuwa", "Machina", "Nangere",
+            "Bade", "Bursari", "Damaturu", "Fune", "Geidam", "Gujba", "Gulani", "Jakusko", "Karasuwa",
+            "Machina", "Nangere",
             "Nguru", "Potiskum", "Tarmuwa", "Yunusari", "Yobe North"
         ],
         "Zamfara": [
-            "Anka", "Bakura", "Birnin Magaji", "Bukkuyum", "Gummi", "Gusau", "Kaura Namoda", "Maru", "Shinkafi", "Talata Mafara",
+            "Anka", "Bakura", "Birnin Magaji", "Bukkuyum", "Gummi", "Gusau", "Kaura Namoda", "Maru", "Shinkafi",
+            "Talata Mafara",
             "Tsafe", "Zamfara North"
         ]
     };
@@ -496,8 +572,9 @@ button:hover {
 
     // Event listener to update LGAs when state is selected
     document.getElementById('state').addEventListener('change', populateLGAs);
-</script>
+    </script>
 
 
 </body>
+
 </html>

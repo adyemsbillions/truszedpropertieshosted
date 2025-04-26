@@ -63,121 +63,136 @@ $result = $conn->query($sql);
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Pending Properties</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            width: 80%;
-            margin: 20px auto;
-            background-color: white;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            border-radius: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
-        button {
-            background-color: purple;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: purple;
-        }
-        .error {
-            color: red;
-        }
-        .success {
-            color: green;
-        }
-        .property-detail {
-            margin-bottom: 20px;
-        }
-        h2 {
-            text-align: center;
-        }
-        .button {
-            background-color: purple;
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: block;
-            margin: 20px auto;
-        }
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        width: 80%;
+        margin: 20px auto;
+        background-color: white;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    table,
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f4f4f4;
+    }
+
+    button {
+        background-color: purple;
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: purple;
+    }
+
+    .error {
+        color: red;
+    }
+
+    .success {
+        color: green;
+    }
+
+    .property-detail {
+        margin-bottom: 20px;
+    }
+
+    h2 {
+        text-align: center;
+    }
+
+    .button {
+        background-color: purple;
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto;
+    }
     </style>
 </head>
+
 <body>
 
     <div class="container">
         <?php if ($show_details): ?>
-            <h2>Property Details</h2>
-            <div class="property-detail">
-                <strong>Property Name:</strong> <?php echo htmlspecialchars($property['property_name']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Price:</strong> $<?php echo htmlspecialchars($property['price']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Address:</strong> <?php echo htmlspecialchars($property['address']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Dimensions:</strong> <?php echo htmlspecialchars($property['dimensions']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Property Type:</strong> <?php echo htmlspecialchars($property['property_type']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Bedrooms:</strong> <?php echo htmlspecialchars($property['bedrooms']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Bathrooms:</strong> <?php echo htmlspecialchars($property['bathrooms']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Toilets:</strong> <?php echo htmlspecialchars($property['toilets']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Parking Spaces:</strong> <?php echo htmlspecialchars($property['parking_space']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>State:</strong> <?php echo htmlspecialchars($property['state']); ?>
-            </div>
-            <div class="property-detail">
-                <strong>local government</strong> <?php echo nl2br(htmlspecialchars($property['lga'])); ?>
-            </div>
-            <div class="property-detail">
-                <strong>Property Details:</strong> <?php echo nl2br(htmlspecialchars($property['property_details'])); ?>
-            </div>
+        <h2>Property Details</h2>
+        <div class="property-detail">
+            <strong>Property Name:</strong> <?php echo htmlspecialchars($property['property_name']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Price:</strong> $<?php echo htmlspecialchars($property['price']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Address:</strong> <?php echo htmlspecialchars($property['address']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Dimensions:</strong> <?php echo htmlspecialchars($property['dimensions']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Property Type:</strong> <?php echo htmlspecialchars($property['property_type']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Bedrooms:</strong> <?php echo htmlspecialchars($property['bedrooms']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Bathrooms:</strong> <?php echo htmlspecialchars($property['bathrooms']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Toilets:</strong> <?php echo htmlspecialchars($property['toilets']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Parking Spaces:</strong> <?php echo htmlspecialchars($property['parking_space']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>State:</strong> <?php echo htmlspecialchars($property['state']); ?>
+        </div>
+        <div class="property-detail">
+            <strong>local government</strong> <?php echo nl2br(htmlspecialchars($property['lga'])); ?>
+        </div>
+        <div class="property-detail">
+            <strong>Property Details:</strong> <?php echo nl2br(htmlspecialchars($property['property_details'])); ?>
+        </div>
 
-            <a href="property_approval.php" class="button">Back to Pending Properties</a>
+        <a href="property_approval.php" class="button">Back to Pending Properties</a>
 
         <?php else: ?>
-            <h2>Pending Properties for Approval</h2>
+        <h2>Pending Properties for Approval</h2>
 
-            <?php
+        <?php
             if ($result->num_rows > 0) {
                 echo "<table>";
                 echo "<tr><th>Property Name</th><th>Price</th><th>Address</th><th>Actions</th></tr>";
@@ -203,6 +218,7 @@ $result = $conn->query($sql);
     </div>
 
 </body>
+
 </html>
 
 <?php
